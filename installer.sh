@@ -17,7 +17,7 @@ NC='\033[0m'
 # Configuración
 INSTALL_DIR="${HOME}/.local/penpot-mcp"
 REPO_URL="https://github.com/penpot/penpot"
-REPO_BRANCH="develop"
+REPO_BRANCH="main"
 MCP_SUBDIR="mcp"
 BIN_DIR="${HOME}/.local/bin"
 DAEMON_NAME="penpot-mcp"
