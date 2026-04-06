@@ -171,10 +171,16 @@ install_penpot_mcp() {
     printf "\n"
     
     # Verificar resultado
-    if tail -20 "$LOG_DIR/bootstrap.log" | grep -qi "error"; then
+    if grep -q "Local:   http://localhost:4400/" "$LOG_DIR/bootstrap.log" 2>/dev/null; then
+        success "Bootstrap completado exitosamente"
+        log "Servidor iniciado:"
+        log "  - HTTP endpoint: http://localhost:4401/mcp"
+        log "  - WebSocket: ws://localhost:4402"
+        log "  - Plugin: http://localhost:4400/"
+    elif tail -20 "$LOG_DIR/bootstrap.log" | grep -qi "error"; then
         error "Bootstrap falló. Ver: $LOG_DIR/bootstrap.log"
     else
-        success "Bootstrap completado exitosamente"
+        warning "Bootstrap terminó con estado desconocido. Ver: $LOG_DIR/bootstrap.log"
     fi
     
     save_version_state
@@ -305,10 +311,16 @@ update_penpot_mcp() {
     printf "\n"
     
     # Verificar resultado
-    if tail -20 "$LOG_DIR/bootstrap.log" | grep -qi "error"; then
+    if grep -q "Local:   http://localhost:4400/" "$LOG_DIR/bootstrap.log" 2>/dev/null; then
+        log "Bootstrap completado exitosamente"
+        log "Servidor iniciado:"
+        log "  - HTTP endpoint: http://localhost:4401/mcp"
+        log "  - WebSocket: ws://localhost:4402"
+        log "  - Plugin: http://localhost:4400/"
+    elif tail -20 "$LOG_DIR/bootstrap.log" | grep -qi "error"; then
         error "Bootstrap falló. Ver: $LOG_DIR/bootstrap.log"
     else
-        log "Bootstrap completado exitosamente"
+        warning "Bootstrap terminó con estado desconocido. Ver: $LOG_DIR/bootstrap.log"
     fi
     
     save_version_state
