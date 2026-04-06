@@ -141,11 +141,23 @@ install_penpot_mcp() {
     
     cd "${INSTALL_DIR}/repo/${MCP_SUBDIR}" || error "No encontrado: $MCP_SUBDIR"
     
-    log "Instalando dependencias..."
-    pnpm install
+    log "Instalando dependencias (esto puede tomar unos minutos)..."
+    log "Output detallado en: $LOG_DIR/install.log"
     
-    log "Compilando..."
-    pnpm run bootstrap
+    if pnpm install >> "$LOG_DIR/install.log" 2>&1; then
+        success "Dependencias instaladas"
+    else
+        error "Error instalando dependencias. Ver: $LOG_DIR/install.log"
+    fi
+    
+    log "Compilando proyecto (esto puede tomar unos minutos)..."
+    log "Output detallado en: $LOG_DIR/bootstrap.log"
+    
+    if pnpm run bootstrap >> "$LOG_DIR/bootstrap.log" 2>&1; then
+        success "Proyecto compilado"
+    else
+        error "Error compilando. Ver: $LOG_DIR/bootstrap.log"
+    fi
     
     save_version_state
     success "Instalación completada"
@@ -246,8 +258,22 @@ update_penpot_mcp() {
     cd "${INSTALL_DIR}/repo/${MCP_SUBDIR}" || error "Subdirectorio MCP no encontrado"
     
     log "Actualizando dependencias..."
-    pnpm install
-    pnpm run bootstrap
+    log "Output detallado en: $LOG_DIR/update.log"
+    
+    if pnpm install >> "$LOG_DIR/update.log" 2>&1; then
+        log "Dependencias actualizadas"
+    else
+        error "Error actualizando dependencias. Ver: $LOG_DIR/update.log"
+    fi
+    
+    log "Recompilando proyecto..."
+    log "Output detallado en: $LOG_DIR/bootstrap.log"
+    
+    if pnpm run bootstrap >> "$LOG_DIR/bootstrap.log" 2>&1; then
+        log "Proyecto recompilado"
+    else
+        error "Error recompilando. Ver: $LOG_DIR/bootstrap.log"
+    fi
     
     save_version_state
     success "Actualización completada"
@@ -276,6 +302,10 @@ show_post_install_message() {
     echo "  source ~/.bashrc"
     echo "  penpot-mcp-installer setup-autostart"
     echo "  (luego reinicia tu sistema)"
+    echo ""
+    echo -e "${YELLOW}Logs de instalación:${NC}"
+    echo "  Dependencias: $LOG_DIR/install.log"
+    echo "  Compilación:  $LOG_DIR/bootstrap.log"
     echo ""
 }
 
