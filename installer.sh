@@ -158,13 +158,31 @@ install_penpot_mcp() {
         warning "No se encontró start:all en package.json"
     fi
     
-    log "Ejecutando bootstrap (sin inicio automático)..."
+    log "Ejecutando bootstrap en background..."
     log "Output detallado en: $LOG_DIR/bootstrap.log"
     
-    if pnpm run bootstrap >> "$LOG_DIR/bootstrap.log" 2>&1; then
-        success "Bootstrap completado"
+    # Ejecutar completamente desacoplado de la terminal
+    nohup pnpm run bootstrap >> "$LOG_DIR/bootstrap.log" 2>&1 &
+    BOOTSTRAP_PID=$!
+    disown $BOOTSTRAP_PID
+    
+    log "Bootstrap iniciado en background (PID: $BOOTSTRAP_PID)"
+    log "Logs disponibles en: $LOG_DIR/bootstrap.log"
+    log "Esperando finalización (Ctrl+C para continuar en background)..."
+    
+    # Mostrar progreso mientras espera
+    while kill -0 $BOOTSTRAP_PID 2>/dev/null; do
+        printf "\r[%s] Bootstrap en progreso..." "$(date '+%H:%M:%S')"
+        sleep 2
+    done
+    
+    printf "\n"
+    
+    # Verificar resultado
+    if tail -20 "$LOG_DIR/bootstrap.log" | grep -qi "error"; then
+        error "Bootstrap falló. Ver: $LOG_DIR/bootstrap.log"
     else
-        error "Error en bootstrap. Ver: $LOG_DIR/bootstrap.log"
+        success "Bootstrap completado exitosamente"
     fi
     
     save_version_state
@@ -282,13 +300,31 @@ update_penpot_mcp() {
         warning "No se encontró start:all en package.json"
     fi
     
-    log "Ejecutando bootstrap (sin inicio automático)..."
+    log "Ejecutando bootstrap en background..."
     log "Output detallado en: $LOG_DIR/bootstrap.log"
     
-    if pnpm run bootstrap >> "$LOG_DIR/bootstrap.log" 2>&1; then
-        log "Bootstrap completado"
+    # Ejecutar completamente desacoplado de la terminal
+    nohup pnpm run bootstrap >> "$LOG_DIR/bootstrap.log" 2>&1 &
+    BOOTSTRAP_PID=$!
+    disown $BOOTSTRAP_PID
+    
+    log "Bootstrap iniciado en background (PID: $BOOTSTRAP_PID)"
+    log "Logs disponibles en: $LOG_DIR/bootstrap.log"
+    log "Esperando finalización (Ctrl+C para continuar en background)..."
+    
+    # Mostrar progreso mientras espera
+    while kill -0 $BOOTSTRAP_PID 2>/dev/null; do
+        printf "\r[%s] Bootstrap en progreso..." "$(date '+%H:%M:%S')"
+        sleep 2
+    done
+    
+    printf "\n"
+    
+    # Verificar resultado
+    if tail -20 "$LOG_DIR/bootstrap.log" | grep -qi "error"; then
+        error "Bootstrap falló. Ver: $LOG_DIR/bootstrap.log"
     else
-        error "Error en bootstrap. Ver: $LOG_DIR/bootstrap.log"
+        log "Bootstrap completado exitosamente"
     fi
     
     save_version_state
