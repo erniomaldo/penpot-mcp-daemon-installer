@@ -150,13 +150,22 @@ install_penpot_mcp() {
         error "Error instalando dependencias. Ver: $LOG_DIR/install.log"
     fi
     
-    log "Compilando proyecto (esto puede tomar unos minutos)..."
-    log "Output detallado en: $LOG_DIR/bootstrap.log"
+    log "Instalando dependencias del monorepo..."
+    log "Output detallado en: $LOG_DIR/install-all.log"
     
-    if pnpm run bootstrap >> "$LOG_DIR/bootstrap.log" 2>&1; then
+    if pnpm run install:all >> "$LOG_DIR/install-all.log" 2>&1; then
+        success "Dependencias del monorepo instaladas"
+    else
+        error "Error instalando dependencias del monorepo. Ver: $LOG_DIR/install-all.log"
+    fi
+    
+    log "Compilando proyecto (esto puede tomar unos minutos)..."
+    log "Output detallado en: $LOG_DIR/build.log"
+    
+    if pnpm run build:all >> "$LOG_DIR/build.log" 2>&1; then
         success "Proyecto compilado"
     else
-        error "Error compilando. Ver: $LOG_DIR/bootstrap.log"
+        error "Error compilando. Ver: $LOG_DIR/build.log"
     fi
     
     save_version_state
@@ -266,13 +275,22 @@ update_penpot_mcp() {
         error "Error actualizando dependencias. Ver: $LOG_DIR/update.log"
     fi
     
-    log "Recompilando proyecto..."
-    log "Output detallado en: $LOG_DIR/bootstrap.log"
+    log "Actualizando dependencias del monorepo..."
+    log "Output detallado en: $LOG_DIR/install-all.log"
     
-    if pnpm run bootstrap >> "$LOG_DIR/bootstrap.log" 2>&1; then
+    if pnpm run install:all >> "$LOG_DIR/install-all.log" 2>&1; then
+        log "Dependencias del monorepo actualizadas"
+    else
+        error "Error actualizando dependencias del monorepo. Ver: $LOG_DIR/install-all.log"
+    fi
+    
+    log "Recompilando proyecto..."
+    log "Output detallado en: $LOG_DIR/build.log"
+    
+    if pnpm run build:all >> "$LOG_DIR/build.log" 2>&1; then
         log "Proyecto recompilado"
     else
-        error "Error recompilando. Ver: $LOG_DIR/bootstrap.log"
+        error "Error recompilando. Ver: $LOG_DIR/build.log"
     fi
     
     save_version_state
@@ -304,8 +322,9 @@ show_post_install_message() {
     echo "  (luego reinicia tu sistema)"
     echo ""
     echo -e "${YELLOW}Logs de instalación:${NC}"
-    echo "  Dependencias: $LOG_DIR/install.log"
-    echo "  Compilación:  $LOG_DIR/bootstrap.log"
+    echo "  Dependencias root:    $LOG_DIR/install.log"
+    echo "  Dependencias monorepo: $LOG_DIR/install-all.log"
+    echo "  Compilación:         $LOG_DIR/build.log"
     echo ""
 }
 
