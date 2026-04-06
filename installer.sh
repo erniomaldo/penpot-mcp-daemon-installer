@@ -150,14 +150,6 @@ install_penpot_mcp() {
         error "Error instalando dependencias. Ver: $LOG_DIR/install.log"
     fi
     
-    log "Modificando package.json para evitar inicio automático..."
-    if grep -q "start:all" package.json; then
-        sed -i 's/ && npm run start:all//' package.json
-        log "Package.json modificado correctamente"
-    else
-        warning "No se encontró start:all en package.json"
-    fi
-    
     log "Ejecutando bootstrap en background..."
     log "Output detallado en: $LOG_DIR/bootstrap.log"
     
@@ -290,14 +282,6 @@ update_penpot_mcp() {
         log "Dependencias actualizadas"
     else
         error "Error actualizando dependencias. Ver: $LOG_DIR/update.log"
-    fi
-    
-    log "Modificando package.json para evitar inicio automático..."
-    if grep -q "start:all" package.json; then
-        sed -i 's/ && npm run start:all//' package.json
-        log "Package.json modificado correctamente"
-    else
-        warning "No se encontró start:all en package.json"
     fi
     
     log "Ejecutando bootstrap en background..."
