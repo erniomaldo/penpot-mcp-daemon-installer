@@ -43,12 +43,23 @@ cd penpot-mcp-daemon-installer
 # 2. Ejecuta el instalador
 chmod +x installer.sh
 ./installer.sh install
+# El instalador agrega ~/.local/bin a tu PATH automáticamente
 
-# 3. Configura autostart (opcional pero recomendado)
-~/.local/bin/penpot-mcp-installer setup-autostart
+# 3. Recarga el PATH
+source ~/.bashrc  # o source ~/.zshrc si usas zsh
+
+# 4. Activa el servidor (elige una opción)
+
+# Opción A: Activar ahora mismo
+penpot-mcp-installer setup-autostart
+penpot-mcp-installer start
+
+# Opción B: Activar al reiniciar el sistema
+penpot-mcp-installer setup-autostart
+# Luego reinicia tu sistema
 ```
 
-¡Listo! El servidor MCP estará ejecutándose en background.
+Para instrucciones detalladas paso a paso, consulta [INSTALL.md](INSTALL.md).
 
 ## Uso
 
