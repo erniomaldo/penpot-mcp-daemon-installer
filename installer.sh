@@ -65,6 +65,60 @@ check_dependencies() {
     success "Dependencias OK"
 }
 
+ensure_path() {
+    local bin_dir="$HOME/.local/bin"
+    local shell_profile=""
+    
+    if [[ "$SHELL" == *"bash"* ]]; then
+        shell_profile="$HOME/.bashrc"
+    elif [[ "$SHELL" == *"zsh"* ]]; then
+        shell_profile="$HOME/.zshrc"
+    else
+        warning "No se pudo detectar tu shell. Agrega manualmente: export PATH=\"$bin_dir:\$PATH\""
+        return 1
+    fi
+    
+    if [[ ":$PATH:" == *":$bin_dir:"* ]]; then
+        log "$bin_dir ya está en tu PATH"
+        return 0
+    fi
+    
+    log "Agregando $bin_dir al PATH..."
+    
+    touch "$shell_profile" 2>/dev/null || {
+        warning "No se puede escribir en $shell_profile. Agrega manualmente: export PATH=\"$bin_dir:\$PATH\""
+        return 1
+    }
+    
+    if ! grep -q 'export PATH="$HOME/.local/bin:$PATH"' "$shell_profile" 2>/dev/null; then
+        echo '' >> "$shell_profile"
+        echo '# Agregado por penpot-mcp-installer' >> "$shell_profile"
+        echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$shell_profile"
+        success "PATH actualizado en $shell_profile"
+    fi
+}
+
+remove_from_path() {
+    local bin_dir="$HOME/.local/bin"
+    local shell_profile=""
+    
+    if [[ "$SHELL" == *"bash"* ]]; then
+        shell_profile="$HOME/.bashrc"
+    elif [[ "$SHELL" == *"zsh"* ]]; then
+        shell_profile="$HOME/.zshrc"
+    else
+        return 0
+    fi
+    
+    if [ -f "$shell_profile" ]; then
+        local temp_file=$(mktemp)
+        grep -v 'export PATH="$HOME/.local/bin:$PATH"' "$shell_profile" > "$temp_file" 2>/dev/null || true
+        grep -v '# Agregado por penpot-mcp-installer' "$temp_file" > "$shell_profile" 2>/dev/null || true
+        rm -f "$temp_file"
+        log "PATH limpiado de $shell_profile"
+    fi
+}
+
 # ============================================================================
 # INSTALACIÓN
 # ============================================================================
@@ -125,6 +179,104 @@ EOF
 
     chmod +x "$script_path"
     success "Launcher creado"
+}
+
+check_updates() {
+    if [ ! -d "${INSTALL_DIR}/repo" ]; then
+        error "No hay instalación. Ejecuta: penpot-mcp-installer install"
+    fi
+    
+    log "Verificando actualizaciones..."
+    
+    cd "${INSTALL_DIR}/repo" || error "Error accediendo al repositorio"
+    git fetch origin
+    git checkout "$REPO_BRANCH" 2>/dev/null || true
+    
+    local local_commit=$(git rev-parse HEAD)
+    local remote_commit=$(git rev-parse "origin/${REPO_BRANCH}")
+    
+    if [ "$local_commit" == "$remote_commit" ]; then
+        success "Ya tienes la última versión"
+        echo "Commit actual: ${local_commit:0:7}"
+        return 0
+    else
+        warning "Nueva versión disponible"
+        echo "Tu versión:     ${local_commit:0:7}"
+        echo "Última versión: ${remote_commit:0:7}"
+        echo ""
+        echo "Para actualizar ejecuta:"
+        echo "  penpot-mcp-installer update"
+        return 1
+    fi
+}
+
+update_penpot_mcp() {
+    if [ ! -d "${INSTALL_DIR}/repo" ]; then
+        error "No hay instalación. Ejecuta: penpot-mcp-installer install"
+    fi
+    
+    log "Actualizando Penpot MCP..."
+    
+    cd "${INSTALL_DIR}/repo" || error "Error accediendo al repositorio"
+    
+    git fetch origin
+    git checkout "$REPO_BRANCH" 2>/dev/null || true
+    
+    local local_commit=$(git rev-parse HEAD)
+    local remote_commit=$(git rev-parse "origin/${REPO_BRANCH}")
+    
+    if [ "$local_commit" == "$remote_commit" ]; then
+        success "Ya tienes la última versión"
+        return 0
+    fi
+    
+    warning "Se actualizará de ${local_commit:0:7} a ${remote_commit:0:7}"
+    read -p "¿Continuar? (s/n): " -r
+    [[ ! $REPLY =~ ^[Ss]$ ]] && { echo "Cancelado"; return 1; }
+    
+    local was_running=false
+    if [ -f "$PID_FILE" ] && kill -0 $(cat "$PID_FILE") 2>/dev/null; then
+        was_running=true
+        stop_daemon
+    fi
+    
+    log "Descargando última versión..."
+    git pull origin "$REPO_BRANCH"
+    
+    cd "${INSTALL_DIR}/repo/${MCP_SUBDIR}" || error "Subdirectorio MCP no encontrado"
+    
+    log "Actualizando dependencias..."
+    pnpm install
+    pnpm run bootstrap
+    
+    save_version_state
+    success "Actualización completada"
+    
+    if [ "$was_running" = true ]; then
+        log "Reiniciando servidor..."
+        sleep 2
+        start_daemon
+    fi
+}
+
+show_post_install_message() {
+    echo ""
+    echo -e "${GREEN}═══════════════════════════════════════${NC}"
+    echo -e "${GREEN}✓ Instalación completada${NC}"
+    echo -e "${GREEN}═══════════════════════════════════════${NC}"
+    echo ""
+    echo -e "${YELLOW}Para activar Penpot MCP Server:${NC}"
+    echo ""
+    echo -e "${BLUE}Opción 1: Activar ahora${NC}"
+    echo "  source ~/.bashrc"
+    echo "  penpot-mcp-installer setup-autostart"
+    echo "  penpot-mcp-installer start"
+    echo ""
+    echo -e "${BLUE}Opción 2: Activar al reiniciar${NC}"
+    echo "  source ~/.bashrc"
+    echo "  penpot-mcp-installer setup-autostart"
+    echo "  (luego reinicia tu sistema)"
+    echo ""
 }
 
 # ============================================================================
@@ -253,7 +405,8 @@ main() {
             check_dependencies
             install_penpot_mcp
             create_launch_script
-            log "Ejecuta: penpot-mcp-installer setup-autostart"
+            ensure_path
+            show_post_install_message
             ;;
         start)
             start_daemon
@@ -266,6 +419,12 @@ main() {
             ;;
         status)
             status_daemon
+            ;;
+        check-updates)
+            check_updates
+            ;;
+        update)
+            update_penpot_mcp
             ;;
         setup-autostart)
             setup_autostart
@@ -280,13 +439,20 @@ main() {
             echo "Logs: $LOG_DIR"
             ;;
         uninstall)
-            warning "Eliminarás todo"
+            warning "Esto eliminará completamente Penpot MCP:"
+            echo "  - Directorio: $INSTALL_DIR"
+            echo "  - Scripts: ${BIN_DIR}/penpot-mcp*"
+            echo "  - Autostart: ${AUTOSTART_DIR}/penpot-mcp.desktop"
+            echo "  - PATH: removerá ~/.local/bin del bashrc/zshrc"
+            echo ""
             read -p "¿Continuar? (s/n): " -r
             [[ $REPLY =~ ^[Ss]$ ]] && {
                 stop_daemon
+                remove_from_path
                 rm -rf "$INSTALL_DIR" "${BIN_DIR}/penpot-mcp"*
                 rm -f "${AUTOSTART_DIR}/penpot-mcp.desktop"
-                success "Desinstalado"
+                success "Desinstalado completamente"
+                echo "Recuerda ejecutar: source ~/.bashrc (o ~/.zshrc)"
             }
             ;;
         *)

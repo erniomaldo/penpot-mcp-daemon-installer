@@ -37,8 +37,8 @@ sudo dnf install git nodejs npm pnpm curl
 
 ```bash
 # 1. Clona el repositorio
-git clone https://github.com/erniomaldo/penpot-mcp-daemon.git
-cd penpot-mcp-daemon
+git clone https://github.com/erniomaldo/penpot-mcp-daemon-installer.git
+cd penpot-mcp-daemon-installer
 
 # 2. Ejecuta el instalador
 chmod +x installer.sh
@@ -160,7 +160,7 @@ MIT - Libres de usar, modificar y distribuir
 ## Contribuciones
 
 ¿Encontraste un bug? ¿Tienes una mejora? 
-Abre un issue o PR en: https://github.com/erniomaldo/penpot-mcp-daemon
+Abre un issue o PR en: https://github.com/erniomaldo/penpot-mcp-daemon-installer
 
 ---
 
