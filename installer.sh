@@ -150,22 +150,21 @@ install_penpot_mcp() {
         error "Error instalando dependencias. Ver: $LOG_DIR/install.log"
     fi
     
-    log "Instalando dependencias del monorepo..."
-    log "Output detallado en: $LOG_DIR/install-all.log"
-    
-    if pnpm run install:all >> "$LOG_DIR/install-all.log" 2>&1; then
-        success "Dependencias del monorepo instaladas"
+    log "Modificando package.json para evitar inicio automático..."
+    if grep -q "start:all" package.json; then
+        sed -i 's/ && npm run start:all//' package.json
+        log "Package.json modificado correctamente"
     else
-        error "Error instalando dependencias del monorepo. Ver: $LOG_DIR/install-all.log"
+        warning "No se encontró start:all en package.json"
     fi
     
-    log "Compilando proyecto (esto puede tomar unos minutos)..."
-    log "Output detallado en: $LOG_DIR/build.log"
+    log "Ejecutando bootstrap (sin inicio automático)..."
+    log "Output detallado en: $LOG_DIR/bootstrap.log"
     
-    if pnpm run build:all >> "$LOG_DIR/build.log" 2>&1; then
-        success "Proyecto compilado"
+    if pnpm run bootstrap >> "$LOG_DIR/bootstrap.log" 2>&1; then
+        success "Bootstrap completado"
     else
-        error "Error compilando. Ver: $LOG_DIR/build.log"
+        error "Error en bootstrap. Ver: $LOG_DIR/bootstrap.log"
     fi
     
     save_version_state
@@ -275,22 +274,21 @@ update_penpot_mcp() {
         error "Error actualizando dependencias. Ver: $LOG_DIR/update.log"
     fi
     
-    log "Actualizando dependencias del monorepo..."
-    log "Output detallado en: $LOG_DIR/install-all.log"
-    
-    if pnpm run install:all >> "$LOG_DIR/install-all.log" 2>&1; then
-        log "Dependencias del monorepo actualizadas"
+    log "Modificando package.json para evitar inicio automático..."
+    if grep -q "start:all" package.json; then
+        sed -i 's/ && npm run start:all//' package.json
+        log "Package.json modificado correctamente"
     else
-        error "Error actualizando dependencias del monorepo. Ver: $LOG_DIR/install-all.log"
+        warning "No se encontró start:all en package.json"
     fi
     
-    log "Recompilando proyecto..."
-    log "Output detallado en: $LOG_DIR/build.log"
+    log "Ejecutando bootstrap (sin inicio automático)..."
+    log "Output detallado en: $LOG_DIR/bootstrap.log"
     
-    if pnpm run build:all >> "$LOG_DIR/build.log" 2>&1; then
-        log "Proyecto recompilado"
+    if pnpm run bootstrap >> "$LOG_DIR/bootstrap.log" 2>&1; then
+        log "Bootstrap completado"
     else
-        error "Error recompilando. Ver: $LOG_DIR/build.log"
+        error "Error en bootstrap. Ver: $LOG_DIR/bootstrap.log"
     fi
     
     save_version_state
@@ -322,9 +320,8 @@ show_post_install_message() {
     echo "  (luego reinicia tu sistema)"
     echo ""
     echo -e "${YELLOW}Logs de instalación:${NC}"
-    echo "  Dependencias root:    $LOG_DIR/install.log"
-    echo "  Dependencias monorepo: $LOG_DIR/install-all.log"
-    echo "  Compilación:         $LOG_DIR/build.log"
+    echo "  Dependencias: $LOG_DIR/install.log"
+    echo "  Bootstrap:    $LOG_DIR/bootstrap.log"
     echo ""
 }
 
